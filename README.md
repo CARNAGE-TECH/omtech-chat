@@ -1,70 +1,194 @@
-# Getting Started with Create React App
+# OMTECH Chat 💬
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> A real-time full-stack chat application with public rooms, shareable room codes, private direct messaging, media uploads, emoji picker, GIF search, typing indicators, and a comprehensive settings panel — built with React and Firebase.
 
-## Available Scripts
+**Live Demo:** *(paste your Vercel link here)*
+**GitHub:** [github.com/CARNAGE-TECH/omtech-chat](https://github.com/CARNAGE-TECH/omtech-chat)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+OMTECH Chat is a production-ready real-time messaging application demonstrating full-stack capabilities with React and Firebase. It supports public chat rooms with unique shareable 6-character room codes, private 1-on-1 direct messages, real-time typing indicators, image and file uploads via Cloudinary, an emoji picker, GIF search via Tenor, and a full settings panel including dark/light mode, privacy controls, notification preferences, account management, and password change with reauthentication.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Authentication
+- Email and password signup and login via Firebase Auth
+- User profiles stored in Firestore on registration
+- Persistent sessions across page refreshes and revisits
+- Secure sign out
 
-### `npm run build`
+### Public Rooms
+- Create public chat rooms with custom names
+- Each room automatically gets a unique **6-character shareable room code**
+- Copy room code to clipboard with one tap
+- Join any room by searching its name or entering its exact code
+- Real-time message sync via Firestore `onSnapshot` listeners
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Direct Messages
+- Search any registered user by name or email
+- Start private 1-on-1 conversations instantly
+- Recent DM conversations list with last message preview
+- DM metadata updates in real time
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Real-Time Messaging
+- Messages appear instantly for all participants — no refresh needed
+- **Live typing indicators** — see when someone is typing in real time
+- Message timestamps on every message
+- Sender name display in group rooms (grouped by sender for clean UI)
+- Messages animate in smoothly with Framer Motion
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Media and Attachments
+- 📷 **Image uploads** — upload any image directly in chat via Cloudinary
+- 📄 **File/document uploads** — share any file type via Cloudinary
+- 😊 **Emoji picker** — full emoji library with search
+- 🎞️ **GIF search** — search and send GIFs via Tenor API
+- Tap any image to open it full size in a new tab
 
-### `npm run eject`
+### Settings Panel
+- **Appearance** — dark/light mode toggle, chat bubble color picker (5 color options)
+- **Notifications** — toggle new message notifications, mention alerts, sound effects
+- **Privacy** — control email visibility, online status display, read receipts
+- **Account** — update display name synced to Firebase Auth and Firestore
+- **Security** — change password with current password reauthentication
+- **About** — app info, version, and developer details
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Design
+- Blue and white color scheme
+- Bottom navigation bar (mobile-first design)
+- Smooth page and section transitions with Framer Motion
+- Fully responsive across all screen sizes and devices
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Tech Stack
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+| Technology | Purpose |
+|---|---|
+| React | Frontend framework |
+| Firebase Authentication | User auth and session management |
+| Cloud Firestore | Real-time database for messages and user data |
+| Cloudinary | Image and file upload/storage |
+| Framer Motion | Animations and page transitions |
+| React Icons | UI icon library |
+| emoji-picker-react | Emoji picker component |
+| Tenor API | GIF search and sending |
+| Vercel | Deployment |
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Getting Started
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Prerequisites
+- Node.js v16+
+- npm
+- Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+- Cloudinary account at [cloudinary.com](https://cloudinary.com)
 
-### Code Splitting
+### Installation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+git clone https://github.com/CARNAGE-TECH/omtech-chat.git
+cd omtech-chat
+npm install
+npm start
+```
 
-### Analyzing the Bundle Size
+### Firebase Configuration
+Replace the config object in `src/firebase.js`:
+```js
+const firebaseConfig = {
+  apiKey: "your_api_key",
+  authDomain: "your_project.firebaseapp.com",
+  projectId: "your_project_id",
+  storageBucket: "your_project.appspot.com",
+  messagingSenderId: "your_sender_id",
+  appId: "your_app_id"
+};
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Enable **Email/Password Authentication** and create a **Firestore Database** in your Firebase console.
 
-### Making a Progressive Web App
+### Cloudinary Configuration
+In `src/components/ChatRoom.jsx`:
+```js
+const CLOUD_NAME = 'your_cloud_name';
+const UPLOAD_PRESET = 'your_unsigned_preset_name';
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Firestore Security Rules
+rules_version = '2';
 
-### Advanced Configuration
+service cloud.firestore {
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+match /databases/{database}/documents {
 
-### Deployment
+match /{document=**} {
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+allow read, write: if request.auth != null;
 
-### `npm run build` fails to minify
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+}
+
+}
+
+---
+
+## Project Structure
+
+src/
+
+├── firebase.js                  # Firebase app initialization and exports
+
+├── App.js                       # Root with auth state, routing, theme management
+
+└── components/
+
+├── Auth.jsx                 # Email/password login and signup
+
+├── BottomNav.jsx            # Bottom tab navigation bar
+
+├── RoomsList.jsx            # Public rooms list, create room, join by code
+
+├── ChatList.jsx             # DM list, user search, recent conversations
+
+├── ChatRoom.jsx             # Real-time chat with media, emoji, GIF support
+
+├── Profile.jsx              # User profile display and sign out
+
+└── Settings.jsx             # Full settings panel with 6 sections
+
+---
+
+## Roadmap
+
+- [ ] Push notifications via Firebase Cloud Messaging
+- [ ] Voice messages with audio recording
+- [ ] Message emoji reactions
+- [ ] Message editing and deletion
+- [ ] Group DMs with more than 2 participants
+- [ ] End-to-end message encryption
+- [ ] Real-time online/offline status indicators
+- [ ] Message search within rooms
+
+---
+
+## Author
+
+**Joseph Omokwale**
+Freelance Web Developer & Designer
+OMTECH INNOVATORS — *The Future of Tech...*
+📍 Edo State, Nigeria
+🌐 [omtech-portfolio.vercel.app](https://omtech-portfolio.vercel.app)
+💼 [github.com/CARNAGE-TECH](https://github.com/CARNAGE-TECH)
+📱 WhatsApp: [+234 807 638 4453](https://wa.me/2348076384453)
+📸 Instagram: [@omtechinnovators](https://instagram.com/omtechinnovators)
+
+---
+
+## License
+MIT License
