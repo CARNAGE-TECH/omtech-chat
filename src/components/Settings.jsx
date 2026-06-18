@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { auth, db } from '../firebase';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMoon, FiSun, FiBell, FiShield, FiUser, FiLock, FiInfo, FiChevronRight, FiX, FiCheck } from 'react-icons/fi';
 
-export default function Settings({ user, theme, setTheme }) {
+const defaultNotifications = { messages: true, mentions: true, sounds: true };
+const defaultPrivacy = { showEmail: false, showOnline: true, readReceipts: true };
+
+export default function Settings({ user, theme, setTheme, bubbleColor, setBubbleColor, palette, accent }) {
   const [section, setSection] = useState(null);
-  const [notifications, setNotifications] = useState(() => JSON.parse(localStorage.getItem('notif_settings') || '{"messages":true,"mentions":true,"sounds":true}'));
-  const [privacy, setPrivacy] = useState(() => JSON.parse(localStorage.getItem('privacy_settings') || '{"showEmail":false,"showOnline":true,"readReceipts":true}'));
+  const [notifications, setNotifications] = useState(() => JSON.parse(localStorage.getItem('notif_settings') || JSON.stringify(defaultNotifications)));
+  const [privacy, setPrivacy] = useState(() => JSON.parse(localStorage.getItem('privacy_settings') || JSON.stringify(defaultPrivacy)));
   const [newPassword, setNewPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [displayName, setDisplayName] = useState(user.displayName || '');
@@ -16,28 +19,53 @@ export default function Settings({ user, theme, setTheme }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const saveNotifications = (key, val) => {
+  const flash = (text) => {
+    setMsg(text);
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const saveUserSettings = async (updates) => {
+    await setDoc(doc(db, 'users', user.uid), updates, { merge: true });
+  };
+
+  const saveNotifications = async (key, val) => {
     const updated = { ...notifications, [key]: val };
     setNotifications(updated);
     localStorage.setItem('notif_settings', JSON.stringify(updated));
+    await saveUserSettings({ notifications: updated });
   };
 
-  const savePrivacy = (key, val) => {
+  const savePrivacy = async (key, val) => {
     const updated = { ...privacy, [key]: val };
     setPrivacy(updated);
     localStorage.setItem('privacy_settings', JSON.stringify(updated));
+    await saveUserSettings({ privacy: updated });
+  };
+
+  const saveBubbleColor = async (color) => {
+    setBubbleColor(color);
+    localStorage.setItem('bubble_color', color);
+    await saveUserSettings({ bubbleColor: color });
+  };
+
+  const saveTheme = async (nextTheme) => {
+    setTheme(nextTheme);
+    localStorage.setItem('app_theme', nextTheme);
+    await saveUserSettings({ theme: nextTheme });
   };
 
   const updateName = async () => {
-    if (!displayName.trim()) return;
+    const nextName = displayName.trim();
+    if (!nextName) return;
     setLoading(true);
     setError('');
     try {
-      await updateProfile(auth.currentUser, { displayName: displayName.trim() });
-      await updateDoc(doc(db, 'users', user.uid), { name: displayName.trim() });
-      setMsg('Display name updated!');
-      setTimeout(() => setMsg(''), 3000);
-    } catch { setError('Failed to update name.'); }
+      await updateProfile(auth.currentUser, { displayName: nextName });
+      await saveUserSettings({ name: nextName, nameLower: nextName.toLowerCase() });
+      flash('Display name updated!');
+    } catch {
+      setError('Failed to update name.');
+    }
     setLoading(false);
   };
 
@@ -50,10 +78,9 @@ export default function Settings({ user, theme, setTheme }) {
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updatePassword(auth.currentUser, newPassword);
-      setMsg('Password changed successfully!');
+      flash('Password changed successfully!');
       setNewPassword('');
       setCurrentPassword('');
-      setTimeout(() => setMsg(''), 3000);
     } catch (err) {
       setError(err.code === 'auth/wrong-password' ? 'Current password is incorrect.' : 'Failed to change password.');
     }
@@ -63,16 +90,34 @@ export default function Settings({ user, theme, setTheme }) {
   const isDark = theme === 'dark';
 
   const Toggle = ({ value, onChange }) => (
-    <div onClick={() => onChange(!value)}
-      style={{ width: '44px', height: '24px', background: value ? 'linear-gradient(135deg, #185FA5, #2b8dd4)' : 'rgba(255,255,255,0.15)', borderRadius: '99px', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: '3px', left: value ? '23px' : '3px', width: '18px', height: '18px', background: 'white', borderRadius: '50%', transition: 'left 0.2s' }} />
-    </div>
+    <button onClick={() => onChange(!value)}
+      style={{ width: '44px', height: '24px', background: value ? accent : (palette.isDark ? 'rgba(255,255,255,0.15)' : '#cbd5e1'), border: 'none', borderRadius: '99px', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+      <span style={{ position: 'absolute', top: '3px', left: value ? '23px' : '3px', width: '18px', height: '18px', background: 'white', borderRadius: '50%', transition: 'left 0.2s' }} />
+    </button>
   );
 
   const inputStyle = {
-    width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(24,95,165,0.25)', borderRadius: '10px',
-    color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box'
+    width: '100%',
+    padding: '11px 14px',
+    background: palette.input,
+    border: `1px solid ${palette.accentBorder}`,
+    borderRadius: '10px',
+    color: palette.text,
+    fontSize: '14px',
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box'
+  };
+
+  const rowStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: palette.surface,
+    border: `1px solid ${palette.border}`,
+    borderRadius: '12px',
+    padding: '14px 16px',
+    boxShadow: palette.shadow
   };
 
   const sections = [
@@ -89,22 +134,22 @@ export default function Settings({ user, theme, setTheme }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
         {section && (
           <button onClick={() => { setSection(null); setError(''); setMsg(''); }}
-            style={{ background: 'none', border: 'none', color: '#90cdf4', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            style={{ background: 'none', border: 'none', color: palette.icon, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <FiX size={20} />
           </button>
         )}
-        <div style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.3px' }}>
+        <div style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '0' }}>
           {section ? sections.find(s => s.id === section)?.title : 'Settings'}
         </div>
       </div>
 
       {msg && (
-        <div style={{ background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#86efac', fontSize: '13px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', padding: '10px 14px', color: palette.success, fontSize: '13px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FiCheck size={14} /> {msg}
         </div>
       )}
       {error && (
-        <div style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#fc8181', fontSize: '13px', marginBottom: '1rem' }}>
+        <div style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '8px', padding: '10px 14px', color: palette.danger, fontSize: '13px', marginBottom: '1rem' }}>
           {error}
         </div>
       )}
@@ -115,45 +160,42 @@ export default function Settings({ user, theme, setTheme }) {
             style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {sections.map(s => (
               <button key={s.id} onClick={() => setSection(s.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
-                <div style={{ background: 'rgba(24,95,165,0.15)', borderRadius: '8px', padding: '8px', color: '#90cdf4', flexShrink: 0 }}>{s.icon}</div>
+                style={{ ...rowStyle, gap: '12px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' }}>
+                <div style={{ background: palette.isDark ? 'rgba(24,95,165,0.15)' : '#e8f2fb', borderRadius: '8px', padding: '8px', color: palette.icon, flexShrink: 0 }}>{s.icon}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'white' }}>{s.title}</div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{s.desc}</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: palette.text }}>{s.title}</div>
+                  <div style={{ fontSize: '12px', color: palette.muted, marginTop: '2px' }}>{s.desc}</div>
                 </div>
-                <FiChevronRight size={16} color="rgba(255,255,255,0.3)" />
+                <FiChevronRight size={16} color={palette.subtle} />
               </button>
             ))}
           </motion.div>
         ) : (
           <motion.div key={section} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }}>
-
-            {/* Appearance */}
             {section === 'appearance' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
+                <div style={rowStyle}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {isDark ? <FiMoon size={18} color="#90cdf4" /> : <FiSun size={18} color="#90cdf4" />}
+                    {isDark ? <FiMoon size={18} color={palette.icon} /> : <FiSun size={18} color={palette.icon} />}
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'white' }}>Dark mode</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Currently {isDark ? 'on' : 'off'}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: palette.text }}>Dark mode</div>
+                      <div style={{ fontSize: '12px', color: palette.muted }}>Currently {isDark ? 'on' : 'off'}</div>
                     </div>
                   </div>
-                  <Toggle value={isDark} onChange={(val) => setTheme(val ? 'dark' : 'light')} />
+                  <Toggle value={isDark} onChange={(val) => saveTheme(val ? 'dark' : 'light')} />
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>Chat bubble color</div>
+                <div style={{ ...rowStyle, display: 'block' }}>
+                  <div style={{ fontSize: '13px', color: palette.muted, marginBottom: '10px' }}>Chat bubble color</div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     {['#185FA5', '#6D28D9', '#065F46', '#B45309', '#9D174D'].map(color => (
-                      <button key={color} onClick={() => { localStorage.setItem('bubble_color', color); window.location.reload(); }}
-                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, border: localStorage.getItem('bubble_color') === color ? '3px solid white' : '3px solid transparent', cursor: 'pointer' }} />
+                      <button key={color} onClick={() => saveBubbleColor(color)}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, border: bubbleColor === color ? `3px solid ${palette.text}` : '3px solid transparent', cursor: 'pointer' }} />
                     ))}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Notifications */}
             {section === 'notifications' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
@@ -161,10 +203,10 @@ export default function Settings({ user, theme, setTheme }) {
                   ['mentions', 'Mentions', 'Get notified when someone mentions you'],
                   ['sounds', 'Sound effects', 'Play sounds for new messages']
                 ].map(([key, title, desc]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div key={key} style={rowStyle}>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'white' }}>{title}</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{desc}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: palette.text }}>{title}</div>
+                      <div style={{ fontSize: '12px', color: palette.muted, marginTop: '2px' }}>{desc}</div>
                     </div>
                     <Toggle value={notifications[key]} onChange={(val) => saveNotifications(key, val)} />
                   </div>
@@ -172,18 +214,17 @@ export default function Settings({ user, theme, setTheme }) {
               </div>
             )}
 
-            {/* Privacy */}
             {section === 'privacy' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  ['showEmail', 'Show email to others', 'Others can see your email address'],
-                  ['showOnline', 'Show online status', 'Others can see when you\'re online'],
-                  ['readReceipts', 'Read receipts', 'Let others know when you\'ve read their messages']
+                  ['showEmail', 'Show email to others', 'Others can see your email address in search results'],
+                  ['showOnline', 'Show online status', 'Others can see when you are online'],
+                  ['readReceipts', 'Read receipts', 'Let others know when you have read their messages']
                 ].map(([key, title, desc]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div key={key} style={rowStyle}>
                     <div style={{ flex: 1, marginRight: '12px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'white' }}>{title}</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{desc}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: palette.text }}>{title}</div>
+                      <div style={{ fontSize: '12px', color: palette.muted, marginTop: '2px' }}>{desc}</div>
                     </div>
                     <Toggle value={privacy[key]} onChange={(val) => savePrivacy(key, val)} />
                   </div>
@@ -191,43 +232,40 @@ export default function Settings({ user, theme, setTheme }) {
               </div>
             )}
 
-            {/* Account */}
             {section === 'account' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px', fontWeight: '500' }}>Display name</label>
+                  <label style={{ fontSize: '13px', color: palette.muted, display: 'block', marginBottom: '6px', fontWeight: '500' }}>Display name</label>
                   <input value={displayName} onChange={e => setDisplayName(e.target.value)} style={inputStyle} placeholder="Your name" />
                 </div>
                 <div>
-                  <label style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px', fontWeight: '500' }}>Email</label>
-                  <input value={user.email} disabled style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} />
+                  <label style={{ fontSize: '13px', color: palette.muted, display: 'block', marginBottom: '6px', fontWeight: '500' }}>Email</label>
+                  <input value={user.email} disabled style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }} />
                 </div>
                 <button onClick={updateName} disabled={loading}
-                  style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', border: 'none', color: 'white', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
+                  style={{ width: '100%', padding: '12px', background: accent, border: 'none', color: palette.buttonText, borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
                   {loading ? 'Saving...' : 'Save changes'}
                 </button>
               </div>
             )}
 
-            {/* Security */}
             {section === 'security' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px', fontWeight: '500' }}>Current password</label>
-                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} style={inputStyle} placeholder="••••••••" />
+                  <label style={{ fontSize: '13px', color: palette.muted, display: 'block', marginBottom: '6px', fontWeight: '500' }}>Current password</label>
+                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} style={inputStyle} placeholder="Current password" />
                 </div>
                 <div>
-                  <label style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '6px', fontWeight: '500' }}>New password</label>
-                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inputStyle} placeholder="••••••••" />
+                  <label style={{ fontSize: '13px', color: palette.muted, display: 'block', marginBottom: '6px', fontWeight: '500' }}>New password</label>
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={inputStyle} placeholder="New password" />
                 </div>
                 <button onClick={changePassword} disabled={loading}
-                  style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', border: 'none', color: 'white', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
+                  style={{ width: '100%', padding: '12px', background: accent, border: 'none', color: palette.buttonText, borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
                   {loading ? 'Changing...' : 'Change password'}
                 </button>
               </div>
             )}
 
-            {/* About */}
             {section === 'about' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
@@ -238,9 +276,9 @@ export default function Settings({ user, theme, setTheme }) {
                   ['Based in', 'Edo State, Nigeria'],
                   ['Built with', 'React + Firebase']
                 ].map(([label, val]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
-                    <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{label}</div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'white' }}>{val}</div>
+                  <div key={label} style={rowStyle}>
+                    <div style={{ fontSize: '14px', color: palette.muted }}>{label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: palette.text }}>{val}</div>
                   </div>
                 ))}
               </div>

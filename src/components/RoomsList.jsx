@@ -6,7 +6,7 @@ import { FiPlus, FiHash, FiX, FiSearch, FiCopy, FiCheck } from 'react-icons/fi';
 
 const generateRoomCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
-export default function RoomsList({ user, onOpenChat }) {
+export default function RoomsList({ user, onOpenChat, palette, accent }) {
   const [rooms, setRooms] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [roomName, setRoomName] = useState('');
@@ -57,9 +57,9 @@ export default function RoomsList({ user, onOpenChat }) {
   );
 
   const inputStyle = {
-    flex: 1, padding: '12px 16px', background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(24,95,165,0.25)', borderRadius: '10px',
-    color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box'
+    flex: 1, padding: '12px 16px', background: palette.input,
+    border: `1px solid ${palette.accentBorder}`, borderRadius: '10px',
+    color: palette.text, fontSize: '14px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box'
   };
 
   return (
@@ -67,10 +67,10 @@ export default function RoomsList({ user, onOpenChat }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.3px' }}>Public Rooms</div>
-          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Join the conversation</div>
+          <div style={{ fontSize: '13px', color: palette.muted, marginTop: '2px' }}>Join the conversation</div>
         </div>
         <button onClick={() => setShowCreate(true)}
-          style={{ background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', border: 'none', color: 'white', borderRadius: '10px', padding: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          style={{ background: accent, border: 'none', color: palette.buttonText, borderRadius: '10px', padding: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           <FiPlus size={20} />
         </button>
       </div>
@@ -78,14 +78,14 @@ export default function RoomsList({ user, onOpenChat }) {
       {/* Search / Join by code */}
       <div style={{ marginBottom: '1.25rem' }}>
         <div style={{ position: 'relative' }}>
-          <FiSearch size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+          <FiSearch size={16} color={palette.muted} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
           <input value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setJoinError(''); }} onKeyDown={e => e.key === 'Enter' && joinByCode()}
             placeholder="Search by name or join by room code..."
             style={{ ...inputStyle, paddingLeft: '40px', width: '100%' }} />
         </div>
         {searchTerm.trim() && (
           <button onClick={joinByCode}
-            style={{ marginTop: '8px', width: '100%', padding: '10px', background: 'rgba(24,95,165,0.15)', border: '1px solid rgba(24,95,165,0.35)', color: '#90cdf4', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ marginTop: '8px', width: '100%', padding: '10px', background: palette.isDark ? 'rgba(24,95,165,0.15)' : '#e8f2fb', border: `1px solid ${palette.accentBorder}`, color: palette.icon, borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
             Join room by code "{searchTerm.toUpperCase()}"
           </button>
         )}
@@ -96,16 +96,16 @@ export default function RoomsList({ user, onOpenChat }) {
         {showCreate && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             style={{ overflow: 'hidden', marginBottom: '1rem' }}>
-            <div style={{ background: 'rgba(24,95,165,0.06)', border: '1px solid rgba(24,95,165,0.25)', borderRadius: '12px', padding: '1rem' }}>
+            <div style={{ background: palette.surface, border: `1px solid ${palette.accentBorder}`, borderRadius: '12px', padding: '1rem', boxShadow: palette.shadow }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#90cdf4' }}>Create new room</div>
-                <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}><FiX size={18} /></button>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: palette.icon }}>Create new room</div>
+                <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: palette.muted, cursor: 'pointer' }}><FiX size={18} /></button>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input value={roomName} onChange={e => setRoomName(e.target.value)} onKeyDown={e => e.key === 'Enter' && createRoom()}
                   placeholder="Room name..." style={inputStyle} />
                 <button onClick={createRoom}
-                  style={{ background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', border: 'none', color: 'white', borderRadius: '8px', padding: '0 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                  style={{ background: accent, border: 'none', color: palette.buttonText, borderRadius: '8px', padding: '0 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                   Create
                 </button>
               </div>
@@ -115,27 +115,27 @@ export default function RoomsList({ user, onOpenChat }) {
       </AnimatePresence>
 
       {filteredRooms.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: palette.subtle, fontSize: '14px' }}>
           No rooms found.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {filteredRooms.map(room => (
-            <div key={room.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px 16px' }}>
+            <div key={room.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: '12px', padding: '14px 16px', boxShadow: palette.shadow }}>
               <motion.button whileTap={{ scale: 0.98 }}
                 onClick={() => onOpenChat({ id: room.id, name: room.name, type: 'room' })}
                 style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', flex: 1, padding: 0 }}>
-                <div style={{ background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FiHash size={18} color="white" />
+                <div style={{ background: accent, borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <FiHash size={18} color={palette.buttonText} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: 'white' }}>{room.name}</div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Created by {room.createdBy}</div>
+                  <div style={{ fontSize: '15px', fontWeight: '600', color: palette.text }}>{room.name}</div>
+                  <div style={{ fontSize: '12px', color: palette.muted, marginTop: '2px' }}>Created by {room.createdBy}</div>
                 </div>
               </motion.button>
               {room.code && (
                 <button onClick={() => copyCode(room.code, room.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(24,95,165,0.12)', border: '1px solid rgba(24,95,165,0.3)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px', color: '#90cdf4', fontFamily: 'inherit', fontWeight: '600', flexShrink: 0 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: palette.isDark ? 'rgba(24,95,165,0.12)' : '#e8f2fb', border: `1px solid ${palette.accentBorder}`, borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px', color: palette.icon, fontFamily: 'inherit', fontWeight: '600', flexShrink: 0 }}>
                   {copiedId === room.id ? <FiCheck size={12} /> : <FiCopy size={12} />}
                   {room.code}
                 </button>

@@ -4,7 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { motion } from 'framer-motion';
 
-export default function Auth() {
+export default function Auth({ palette, accent }) {
   const [isLogin, setIsLogin] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ export default function Auth() {
   const handleSubmit = async () => {
     setError('');
     if (!email || !password) { setError('Please fill in all fields.'); return; }
-    if (!isLogin && !name) { setError('Please enter your name.'); return; }
+    if (!isLogin && !name.trim()) { setError('Please enter your name.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
 
     setLoading(true);
@@ -23,12 +23,18 @@ export default function Auth() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(cred.user, { displayName: name });
+        const displayName = name.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+        const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+        await updateProfile(cred.user, { displayName });
         await setDoc(doc(db, 'users', cred.user.uid), {
-          name,
-          email,
+          name: displayName,
+          nameLower: displayName.toLowerCase(),
+          email: normalizedEmail,
+          emailLower: normalizedEmail,
           uid: cred.user.uid,
+          privacy: { showEmail: false, showOnline: true, readReceipts: true },
+          notifications: { messages: true, mentions: true, sounds: true },
           createdAt: new Date().toISOString()
         });
       }
@@ -43,61 +49,95 @@ export default function Auth() {
   };
 
   const inputStyle = {
-    width: '100%', padding: '13px 16px', background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(212,175,55,0.2)', borderRadius: '10px',
-    color: 'white', fontSize: '15px', outline: 'none', fontFamily: 'inherit',
-    boxSizing: 'border-box', transition: 'border-color 0.2s'
+    width: '100%',
+    padding: '13px 16px',
+    background: palette.input,
+    border: `1px solid ${palette.accentBorder}`,
+    borderRadius: '10px',
+    color: palette.text,
+    fontSize: '15px',
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s'
+  };
+
+  const labelStyle = {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: palette.muted,
+    display: 'block',
+    marginBottom: '6px'
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: palette.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ width: '100%', maxWidth: '400px' }}>
-
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', borderRadius: '16px', marginBottom: '1rem', fontSize: '28px' }}>
-            💬
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', background: accent, borderRadius: '16px', marginBottom: '1rem', fontSize: '15px', fontWeight: 800, color: '#fff' }}>
+            Chat
           </div>
-          <div style={{ fontSize: '26px', fontWeight: '700', color: 'white', letterSpacing: '-0.5px' }}>OMTECH Chat</div>
-          <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+          <div style={{ fontSize: '26px', fontWeight: '700', color: palette.text, letterSpacing: '0' }}>OMTECH Chat</div>
+          <div style={{ fontSize: '14px', color: palette.muted, marginTop: '4px' }}>
             {isLogin ? 'Welcome back. Sign in to continue.' : 'Create an account to get started.'}
           </div>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '16px', padding: '2rem' }}>
+        <div style={{ background: palette.surface, border: `1px solid ${palette.border}`, borderRadius: '12px', padding: '2rem', boxShadow: palette.shadow }}>
           {!isLogin && (
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '13px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '6px' }}>Full name</label>
-              <input style={inputStyle} placeholder="Joseph" value={name} onChange={e => setName(e.target.value)}
-                onFocus={e => e.target.style.borderColor = '#185FA5'} onBlur={e => e.target.style.borderColor = 'rgba(212,175,55,0.2)'} />
+              <label style={labelStyle}>Full name</label>
+              <input
+                style={inputStyle}
+                placeholder="Joseph"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onFocus={e => e.target.style.borderColor = '#185FA5'}
+                onBlur={e => e.target.style.borderColor = palette.accentBorder}
+              />
             </div>
           )}
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '6px' }}>Email</label>
-            <input style={inputStyle} type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)}
-              onFocus={e => e.target.style.borderColor = '#185FA5'} onBlur={e => e.target.style.borderColor = 'rgba(212,175,55,0.2)'} />
+            <label style={labelStyle}>Email</label>
+            <input
+              style={inputStyle}
+              type="email"
+              placeholder="you@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onFocus={e => e.target.style.borderColor = '#185FA5'}
+              onBlur={e => e.target.style.borderColor = palette.accentBorder}
+            />
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '13px', fontWeight: '500', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '6px' }}>Password</label>
-            <input style={inputStyle} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
-              onFocus={e => e.target.style.borderColor = '#185FA5'} onBlur={e => e.target.style.borderColor = 'rgba(212,175,55,0.2)'} />
+            <label style={labelStyle}>Password</label>
+            <input
+              style={inputStyle}
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onFocus={e => e.target.style.borderColor = '#185FA5'}
+              onBlur={e => e.target.style.borderColor = palette.accentBorder}
+            />
           </div>
 
           {error && (
-            <div style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: '#fc8181', fontSize: '13px', padding: '10px 12px', borderRadius: '8px', marginBottom: '12px' }}>
+            <div style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: palette.danger, fontSize: '13px', padding: '10px 12px', borderRadius: '8px', marginBottom: '12px' }}>
               {error}
             </div>
           )}
 
           <button onClick={handleSubmit} disabled={loading}
-            style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg, #185FA5, #2b8dd4)', border: 'none', color: '#0a0a0a', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
+            style={{ width: '100%', padding: '13px', background: accent, border: 'none', color: palette.buttonText, borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
             {loading ? 'Please wait...' : isLogin ? 'Sign in' : 'Create account'}
           </button>
 
-          <div style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '1.25rem' }}>
+          <div style={{ textAlign: 'center', fontSize: '13px', color: palette.muted, marginTop: '1.25rem' }}>
             {isLogin ? 'New here? ' : 'Already have an account? '}
-            <span style={{ color: '#185FA5', cursor: 'pointer', fontWeight: '600' }} onClick={() => { setIsLogin(!isLogin); setError(''); }}>
+            <span style={{ color: palette.icon, cursor: 'pointer', fontWeight: '600' }} onClick={() => { setIsLogin(!isLogin); setError(''); }}>
               {isLogin ? 'Create account' : 'Sign in'}
             </span>
           </div>

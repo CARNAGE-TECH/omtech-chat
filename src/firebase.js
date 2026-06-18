@@ -3,13 +3,21 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAI4v2t1T8xjSQXhn-2abEIm4hMVHTDjRk",
-  authDomain: "omtech-chat.firebaseapp.com",
-  projectId: "omtech-chat",
-  storageBucket: "omtech-chat.firebasestorage.app",
-  messagingSenderId: "423921429629",
-  appId: "1:423921429629:web:6fa6442d6896298b1c1514"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
+
+export const missingFirebaseConfig = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingFirebaseConfig.length > 0) {
+  throw new Error(`Missing Firebase environment variables: ${missingFirebaseConfig.join(', ')}`);
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

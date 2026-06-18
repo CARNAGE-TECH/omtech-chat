@@ -1,194 +1,127 @@
-# OMTECH Chat 💬
+# OMTECH Chat
 
-> A real-time full-stack chat application with public rooms, shareable room codes, private direct messaging, media uploads, emoji picker, GIF search, typing indicators, and a comprehensive settings panel — built with React and Firebase.
+Real-time chat with public rooms, shareable room codes, direct messages, media uploads, emoji, GIF search, typing indicators, and user settings. Built with React and Firebase.
 
-**Live Demo:** *(paste your Vercel link here)*
+**Live Demo:** add your Vercel link here  
 **GitHub:** [github.com/CARNAGE-TECH/omtech-chat](https://github.com/CARNAGE-TECH/omtech-chat)
-
----
-
-## Overview
-
-OMTECH Chat is a production-ready real-time messaging application demonstrating full-stack capabilities with React and Firebase. It supports public chat rooms with unique shareable 6-character room codes, private 1-on-1 direct messages, real-time typing indicators, image and file uploads via Cloudinary, an emoji picker, GIF search via Tenor, and a full settings panel including dark/light mode, privacy controls, notification preferences, account management, and password change with reauthentication.
-
----
 
 ## Features
 
-### Authentication
-- Email and password signup and login via Firebase Auth
-- User profiles stored in Firestore on registration
-- Persistent sessions across page refreshes and revisits
-- Secure sign out
-
-### Public Rooms
-- Create public chat rooms with custom names
-- Each room automatically gets a unique **6-character shareable room code**
-- Copy room code to clipboard with one tap
-- Join any room by searching its name or entering its exact code
-- Real-time message sync via Firestore `onSnapshot` listeners
-
-### Direct Messages
-- Search any registered user by name or email
-- Start private 1-on-1 conversations instantly
-- Recent DM conversations list with last message preview
-- DM metadata updates in real time
-
-### Real-Time Messaging
-- Messages appear instantly for all participants — no refresh needed
-- **Live typing indicators** — see when someone is typing in real time
-- Message timestamps on every message
-- Sender name display in group rooms (grouped by sender for clean UI)
-- Messages animate in smoothly with Framer Motion
-
-### Media and Attachments
-- 📷 **Image uploads** — upload any image directly in chat via Cloudinary
-- 📄 **File/document uploads** — share any file type via Cloudinary
-- 😊 **Emoji picker** — full emoji library with search
-- 🎞️ **GIF search** — search and send GIFs via Tenor API
-- Tap any image to open it full size in a new tab
-
-### Settings Panel
-- **Appearance** — dark/light mode toggle, chat bubble color picker (5 color options)
-- **Notifications** — toggle new message notifications, mention alerts, sound effects
-- **Privacy** — control email visibility, online status display, read receipts
-- **Account** — update display name synced to Firebase Auth and Firestore
-- **Security** — change password with current password reauthentication
-- **About** — app info, version, and developer details
-
-### Design
-- Blue and white color scheme
-- Bottom navigation bar (mobile-first design)
-- Smooth page and section transitions with Framer Motion
-- Fully responsive across all screen sizes and devices
-
----
+- Email/password authentication with Firebase Auth
+- Public rooms with 6-character shareable room codes
+- Private 1-on-1 direct messages
+- Real-time messages and typing indicators with Firestore listeners
+- Image/file uploads through Cloudinary
+- Emoji picker and Tenor GIF search
+- Dark/light mode and configurable chat bubble color
+- Notification and privacy preferences saved to user profiles
+- Profile name updates and password change with reauthentication
 
 ## Tech Stack
 
 | Technology | Purpose |
 |---|---|
 | React | Frontend framework |
-| Firebase Authentication | User auth and session management |
-| Cloud Firestore | Real-time database for messages and user data |
+| Firebase Authentication | User auth and sessions |
+| Cloud Firestore | Real-time messages, rooms, users, and settings |
 | Cloudinary | Image and file upload/storage |
-| Framer Motion | Animations and page transitions |
-| React Icons | UI icon library |
-| emoji-picker-react | Emoji picker component |
-| Tenor API | GIF search and sending |
+| Tenor API | GIF search |
+| Framer Motion | UI transitions |
+| React Icons | Icons |
 | Vercel | Deployment |
 
----
-
 ## Getting Started
-
-### Prerequisites
-- Node.js v16+
-- npm
-- Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-- Cloudinary account at [cloudinary.com](https://cloudinary.com)
-
-### Installation
 
 ```bash
 git clone https://github.com/CARNAGE-TECH/omtech-chat.git
 cd omtech-chat
 npm install
+```
+
+Create a local `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+Fill in:
+
+```env
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+
+REACT_APP_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+REACT_APP_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+REACT_APP_TENOR_API_KEY=your_tenor_api_key
+```
+
+Run locally:
+
+```bash
 npm start
 ```
 
-### Firebase Configuration
-Replace the config object in `src/firebase.js`:
-```js
-const firebaseConfig = {
-  apiKey: "your_api_key",
-  authDomain: "your_project.firebaseapp.com",
-  projectId: "your_project_id",
-  storageBucket: "your_project.appspot.com",
-  messagingSenderId: "your_sender_id",
-  appId: "your_app_id"
-};
-```
+## Vercel Environment Variables
 
-Enable **Email/Password Authentication** and create a **Firestore Database** in your Firebase console.
+Yes, you need to add the Firebase values to Vercel after deploying.
 
-### Cloudinary Configuration
-In `src/components/ChatRoom.jsx`:
-```js
-const CLOUD_NAME = 'your_cloud_name';
-const UPLOAD_PRESET = 'your_unsigned_preset_name';
-```
+In Vercel, open the project, go to **Settings -> Environment Variables**, and add every `REACT_APP_...` value from `.env.example`. Add the same Cloudinary and Tenor values too. After saving them, redeploy the app so Create React App can bake those variables into the production bundle.
 
-### Firestore Security Rules
-rules_version = '2';
+## Firebase Setup
 
-service cloud.firestore {
+1. Enable Email/Password Authentication in Firebase Auth.
+2. Create a Cloud Firestore database.
+3. Publish the rules in `firestore.rules`.
+4. Make sure new user documents include `nameLower` and `emailLower`; the current signup flow does this automatically.
 
-match /databases/{database}/documents {
+## Cloudinary Setup
 
-match /{document=**} {
-
-allow read, write: if request.auth != null;
-
-}
-
-}
-
-}
-
----
+Create an unsigned upload preset and put the cloud name and preset in your `.env` / Vercel variables. For production, restrict the preset by file type, max file size, and allowed sources.
 
 ## Project Structure
 
+```text
 src/
-
-├── firebase.js                  # Firebase app initialization and exports
-
-├── App.js                       # Root with auth state, routing, theme management
-
-└── components/
-
-├── Auth.jsx                 # Email/password login and signup
-
-├── BottomNav.jsx            # Bottom tab navigation bar
-
-├── RoomsList.jsx            # Public rooms list, create room, join by code
-
-├── ChatList.jsx             # DM list, user search, recent conversations
-
-├── ChatRoom.jsx             # Real-time chat with media, emoji, GIF support
-
-├── Profile.jsx              # User profile display and sign out
-
-└── Settings.jsx             # Full settings panel with 6 sections
-
----
+  firebase.js
+  theme.js
+  App.js
+  components/
+    Auth.jsx
+    BottomNav.jsx
+    RoomsList.jsx
+    ChatList.jsx
+    ChatRoom.jsx
+    Profile.jsx
+    Settings.jsx
+firestore.rules
+```
 
 ## Roadmap
 
-- [ ] Push notifications via Firebase Cloud Messaging
-- [ ] Voice messages with audio recording
-- [ ] Message emoji reactions
-- [ ] Message editing and deletion
-- [ ] Group DMs with more than 2 participants
-- [ ] End-to-end message encryption
-- [ ] Real-time online/offline status indicators
-- [ ] Message search within rooms
-
----
+- Push notifications via Firebase Cloud Messaging
+- Voice messages with audio recording
+- Message emoji reactions
+- Message editing and deletion
+- Group DMs
+- End-to-end message encryption
+- Online/offline status indicators
+- Message search within rooms
 
 ## Author
 
-**Joseph Omokwale**
-Freelance Web Developer & Designer
-OMTECH INNOVATORS — *The Future of Tech...*
-📍 Edo State, Nigeria
-🌐 [omtech-portfolio.vercel.app](https://omtech-portfolio.vercel.app)
-💼 [github.com/CARNAGE-TECH](https://github.com/CARNAGE-TECH)
-📱 WhatsApp: [+234 807 638 4453](https://wa.me/2348076384453)
-📸 Instagram: [@omtechinnovators](https://instagram.com/omtechinnovators)
-
----
+**Joseph Omokwale**  
+Freelance Web Developer & Designer  
+OMTECH INNOVATORS - The Future of Tech  
+Edo State, Nigeria  
+[Portfolio](https://omtech-portfolio.vercel.app)  
+[GitHub](https://github.com/CARNAGE-TECH)  
+[WhatsApp](https://wa.me/2348076384453)  
+[Instagram](https://instagram.com/omtechinnovators)
 
 ## License
+
 MIT License

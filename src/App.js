@@ -8,6 +8,7 @@ import ChatList from './components/ChatList';
 import ChatRoom from './components/ChatRoom';
 import Profile from './components/Profile';
 import Settings from './components/Settings';
+import { accentGradient, getPalette } from './theme';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -15,6 +16,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('rooms');
   const [activeChat, setActiveChat] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'dark');
+  const [bubbleColor, setBubbleColor] = useState(() => localStorage.getItem('bubble_color') || '#185FA5');
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -26,33 +28,47 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('app_theme', theme);
-    document.body.style.background = theme === 'dark' ? '#0a0a0a' : '#f0f2f5';
+    document.body.style.background = getPalette(theme).bg;
   }, [theme]);
 
-  const bg = theme === 'dark' ? '#0a0a0a' : '#f0f2f5';
-  const color = theme === 'dark' ? 'white' : '#111827';
+  useEffect(() => {
+    localStorage.setItem('bubble_color', bubbleColor);
+  }, [bubbleColor]);
+
+  const palette = getPalette(theme);
+  const accent = accentGradient(bubbleColor);
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#185FA5', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: palette.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: palette.icon, fontFamily: "'Segoe UI', Arial, sans-serif" }}>
         Loading...
       </div>
     );
   }
 
-  if (!user) return <Auth />;
+  if (!user) return <Auth theme={theme} palette={palette} accent={accent} />;
 
   if (activeChat) {
-    return <ChatRoom chat={activeChat} user={user} onBack={() => setActiveChat(null)} theme={theme} />;
+    return <ChatRoom chat={activeChat} user={user} onBack={() => setActiveChat(null)} theme={theme} palette={palette} accent={accent} />;
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: bg, color, fontFamily: "'Segoe UI', Arial, sans-serif", paddingBottom: '70px' }}>
-      {activeTab === 'rooms' && <RoomsList user={user} onOpenChat={setActiveChat} theme={theme} />}
-      {activeTab === 'chats' && <ChatList user={user} onOpenChat={setActiveChat} theme={theme} />}
-      {activeTab === 'settings' && <Settings user={user} theme={theme} setTheme={setTheme} />}
-      {activeTab === 'profile' && <Profile user={user} theme={theme} />}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} />
+    <div style={{ minHeight: '100vh', background: palette.bg, color: palette.text, fontFamily: "'Segoe UI', Arial, sans-serif", paddingBottom: '70px' }}>
+      {activeTab === 'rooms' && <RoomsList user={user} onOpenChat={setActiveChat} palette={palette} accent={accent} />}
+      {activeTab === 'chats' && <ChatList user={user} onOpenChat={setActiveChat} palette={palette} accent={accent} />}
+      {activeTab === 'settings' && (
+        <Settings
+          user={user}
+          theme={theme}
+          setTheme={setTheme}
+          bubbleColor={bubbleColor}
+          setBubbleColor={setBubbleColor}
+          palette={palette}
+          accent={accent}
+        />
+      )}
+      {activeTab === 'profile' && <Profile user={user} palette={palette} accent={accent} />}
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} palette={palette} />
     </div>
   );
 }
